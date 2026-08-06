@@ -190,6 +190,7 @@ static int   g_cursor_shown = 0;      /* draw the docked cursor only while it is
 
 void android_native_input_init(void){
   padConfigureInput(1, HidNpadStyleSet_NpadStandard);
+  hidSetNpadJoyHoldType(HidNpadJoyHoldType_Vertical);
   padInitializeDefault(&g_pad);
   hidInitializeTouchScreen();
 }
@@ -235,14 +236,29 @@ void android_native_feed_hid(inject_fn inject, void *env, void *thiz){
     return;
   }
 
-  /* ---- no touch: left-stick virtual cursor for docked play, A = tap. Drawn as a
-     visible dot (android_native_draw_cursor). The stick is mapped through the same
-     portrait rotation so it moves the way the player sees it on the TV. ---- */
-  HidAnalogStickState ls = padGetStickPos(&g_pad, 0);
+  /* ---- no touch: stick-driven virtual cursor, A = tap. Drawn as a visible dot
+     (android_native_draw_cursor). A single right Joy-Con reports its stick as the
+     right stick; all full controllers and left/dual Joy-Cons use the left stick. ---- */
+  u32 style = padGetStyleSet(&g_pad);
+  int right_joy_only = (style & HidNpadStyleTag_NpadJoyRight) &&
+                       !(style & (HidNpadStyleTag_NpadFullKey |
+                                  HidNpadStyleTag_NpadHandheld |
+                                  HidNpadStyleTag_NpadJoyDual |
+                                  HidNpadStyleTag_NpadJoyLeft));
+  HidAnalogStickState ls = padGetStickPos(&g_pad, right_joy_only ? 1 : 0);
   float sx = (ls.x / 32767.0f) * 14.0f, sy = (ls.y / 32767.0f) * 14.0f;   /* ~14 px/frame */
-  if (config.portrait == 0) { g_cursor_x += sx; g_cursor_y -= sy; }       /* landscape */
-  else if (config.portrait == 2) { g_cursor_x += sy; g_cursor_y += sx; }  /* ROT_270 CCW */
-  else                           { g_cursor_x -= sy; g_cursor_y -= sx; }  /* ROT_90  CW  */
+  if (padIsHandheld(&g_pad)) {
+    /* Attached Joy-Cons rotate with the display, so convert their panel-relative
+       axes through the same portrait transform used by the compositor. */
+    if (config.portrait == 0) { g_cursor_x += sx; g_cursor_y -= sy; }       /* landscape */
+    else if (config.portrait == 2) { g_cursor_x += sy; g_cursor_y += sx; }  /* ROT_270 CCW */
+    else                           { g_cursor_x -= sy; g_cursor_y -= sx; }  /* ROT_90  CW  */
+  } else {
+    /* Detached Joy-Cons declared vertical (and other external controllers) are
+       already aligned with the portrait game axes; rotating again inverts them. */
+    g_cursor_x += sx;
+    g_cursor_y -= sy;
+  }
   if (g_cursor_x < 0) g_cursor_x = 0;
   if (g_cursor_x > g_w) g_cursor_x = g_w;
   if (g_cursor_y < 0) g_cursor_y = 0;

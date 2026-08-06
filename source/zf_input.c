@@ -41,6 +41,7 @@ static void map_touch(float px, float py, float *x, float *y) {
 
 void zf_input_init(void) {
   padConfigureInput(1, HidNpadStyleSet_NpadStandard);
+  hidSetNpadJoyHoldType(HidNpadJoyHoldType_Vertical);
   padInitializeDefault(&g_pad);
   /* libnx documents this as mandatory when the touchscreen API is used. */
   hidInitializeTouchScreen();
@@ -187,11 +188,21 @@ int zf_input_update(zf_touch_fn touch, zf_button_fn back, void *env, void *rende
     return 1;
   }
 
-  HidAnalogStickState stick=padGetStickPos(&g_pad,0);
+  u32 style=padGetStyleSet(&g_pad);
+  int right_joy_only=(style&HidNpadStyleTag_NpadJoyRight)&&
+                     !(style&(HidNpadStyleTag_NpadFullKey|
+                              HidNpadStyleTag_NpadHandheld|
+                              HidNpadStyleTag_NpadJoyDual|
+                              HidNpadStyleTag_NpadJoyLeft));
+  HidAnalogStickState stick=padGetStickPos(&g_pad,right_joy_only?1:0);
   float sx=(float)stick.x/32767.0f*14.0f, sy=(float)stick.y/32767.0f*14.0f;
-  if(config.portrait==2){ g_cursor_x+=sy; g_cursor_y+=sx; }
-  else if(config.portrait==1){ g_cursor_x-=sy; g_cursor_y-=sx; }
-  else { g_cursor_x+=sx; g_cursor_y-=sy; }
+  if(padIsHandheld(&g_pad)){
+    if(config.portrait==2){ g_cursor_x+=sy; g_cursor_y+=sx; }
+    else if(config.portrait==1){ g_cursor_x-=sy; g_cursor_y-=sx; }
+    else { g_cursor_x+=sx; g_cursor_y-=sy; }
+  }else{
+    g_cursor_x+=sx;g_cursor_y-=sy;
+  }
   float gw=(float)android_native_width(),gh=(float)android_native_height();
   if(g_cursor_x<0)g_cursor_x=0;
   if(g_cursor_x>gw)g_cursor_x=gw;
