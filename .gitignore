@@ -1,0 +1,6 @@
+/build/
+/dist/
+/.tmp/
+/.build-home/
+*.elf
+*.nacp
