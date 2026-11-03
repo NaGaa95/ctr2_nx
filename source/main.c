@@ -1,4 +1,5 @@
 /* ZFramework Android ARM64 host for Nintendo Switch. */
+#include "saltynx.h"
 #include <switch.h>
 #include <SDL2/SDL.h>
 #include <EGL/egl.h>
@@ -305,7 +306,9 @@ static void gfx_init(Gfx *g){
 }
 static void gfx_shutdown(Gfx *g){if(g->d&&g->d!=EGL_NO_DISPLAY){eglMakeCurrent(g->d,EGL_NO_SURFACE,EGL_NO_SURFACE,EGL_NO_CONTEXT);if(g->c&&g->c!=EGL_NO_CONTEXT)eglDestroyContext(g->d,g->c);if(g->s&&g->s!=EGL_NO_SURFACE)eglDestroySurface(g->d,g->s);eglTerminate(g->d);}}
 
-int main(int argc,char **argv){(void)argc;(void)argv;
+int main(int argc,char **argv){
+  saltynx_start();
+  atexit(saltynx_stop);(void)argc;(void)argv;
   startup_status_begin("Preparing " GAME_TITLE);
   if(chdir(GAME_HOME)!=0)fatal_error("Could not open %s. Put the NRO and extracted APK files in that folder.",GAME_HOME);
   check_syscalls();

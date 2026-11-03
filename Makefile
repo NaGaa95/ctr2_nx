@@ -20,6 +20,9 @@ CFLAGS    += -DLOAD_ADDRESS=0xC0000000
 CXXFLAGS  := $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++17
 ASFLAGS   := $(ARCH)
 LDFLAGS   := -specs=$(DEVKITPRO)/libnx/switch.specs $(ARCH) -Wl,--gc-sections
+# Publish all EGL presentation paths, including guest import tables.
+LDFLAGS += -Wl,--wrap=eglSwapBuffers,--wrap=eglGetProcAddress,--wrap=__libnx_exit
+
 LIBS      := -lSDL2 -lvorbisidec -logg \
 	-Wl,--start-group -lavformat -lavcodec -lswscale -lswresample -lavutil -ldav1d -lbz2 -Wl,--end-group \
 	-lGLESv2 -lEGL -lglapi -ldrm_nouveau -lz -lnx -lm
