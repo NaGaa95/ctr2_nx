@@ -28,11 +28,26 @@ On first boot, the port validates the game data, locates `libctr2.so`, preserves
 
 ### Notes
 
+The first launch creates `/switch/ctr2_nx/config.txt`. To change the display,
+edit its `portrait` setting and restart the game:
+
+| Value | Display |
+| --- | --- |
+| `0` | Landscape, including normal TV orientation |
+| `1` | Portrait, rotated 90° clockwise (default) |
+| `2` | Portrait, rotated 270° clockwise |
+
+Landscape uses the original portrait assets, so some backgrounds and menus may
+stretch. Invalid `portrait` values use the default. The orientation setting also
+applies in docked mode; it does not change automatically when docking.
+
 This will not work in applet/album mode. Use a game override (hold R while launching a title) or a forwarder so the game receives the full application memory pool and the required code-memory permissions.
 
 ### How to build
 
-You need devkitA64 plus the following devkitPro packages:
+Release builds use the standard devkitPro Mesa 20 package
+(`switch-mesa` 20.1.0-5), not a newer Mesa/Vulkan replacement. You need devkitA64
+plus the following devkitPro packages:
 
 * `switch-mesa`
 * `switch-libdrm_nouveau`

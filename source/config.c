@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
+#include <errno.h>
 
 #include "config.h"
 #include "util.h"
@@ -32,6 +33,15 @@ static inline void parse_var(const char *name, const char *value) {
   if (!strcmp(name, "touchscreen") || !strcmp(name, "controller_cursor") ||
       !strcmp(name, "show_fps") || !strcmp(name, "widescreen")) {
     config_needs_rewrite = 1;
+    return;
+  }
+
+  if (!strcmp(name, "portrait")) {
+    char *end;
+    errno = 0;
+    const long mode = strtol(value, &end, 10);
+    config.portrait = end != value && *end == '\0' && errno != ERANGE &&
+                      mode >= 0 && mode <= 2 ? (int)mode : DEFAULT_PORTRAIT;
     return;
   }
 
@@ -66,15 +76,16 @@ int read_config(const char *file) {
     if (fgets(line, sizeof(line), f) != NULL) {
       name = line;
       // trim name
-      while (*name && isspace((int)*name)) ++name;
+      while (*name && isspace((unsigned char)*name)) ++name;
       if (name[0] == '#') continue; // skip comments
-      for (tmp = name; *tmp && !isspace((int)*tmp); ++tmp);
+      for (tmp = name; *tmp && !isspace((unsigned char)*tmp); ++tmp);
       // if tmp points to the end of the string, there's no value to parse
       if (*tmp != 0) {
         *tmp = 0;
         // value is next; trim value
-        for (value = tmp + 1; *value && isspace((int)*value); ++value);
-        for (tmp = value + strlen(value) - 1; isspace((int)*tmp); --tmp) *tmp = 0;
+        for (value = tmp + 1; *value && isspace((unsigned char)*value); ++value);
+        for (tmp = value + strlen(value);
+             tmp > value && isspace((unsigned char)tmp[-1]);) *--tmp = 0;
         // got key value pair
         parse_var(name, value);
       }
